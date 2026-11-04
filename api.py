@@ -7,19 +7,20 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+# Dispositivos com os nomes do seu layout
 DISPOSITIVOS = [
-    {"id": 1, "nome": "Sensor de Temperatura", "localizacao": "Laboratório de Robótica"},
-    {"id": 2, "nome": "Controle de Ar-Condicionado", "localizacao": "Sala A-12"},
-    {"id": 3, "nome": "Sensor de Umidade", "localizacao": "Biblioteca"},
-    {"id": 4, "nome": "Controle de Acesso", "localizacao": "Entrada Principal"},
-    {"id": 5, "nome": "Sensor de Nível", "localizacao": "Reservatório de Água"},
+    {"id": 1, "nome": "Laboratório 212", "identificador": "irClient-D8BC38A94716"},
+    {"id": 2, "nome": "Laboratório A108", "identificador": "sensor-A108"},
+    {"id": 3, "nome": "Lab. Info", "identificador": "temp-Lab03"},
+    {"id": 4, "nome": "Caixa D'Água", "identificador": "nivel-CX01"},
+    {"id": 5, "nome": "Recepção", "identificador": "porta-Entrada"},
 ]
 
 PROBLEMAS = [
-    {"descricao": "Nenhum problema identificado", "gravidade": 0},
-    {"descricao": "Sinal Wi-Fi fraco", "gravidade": 1},
-    {"descricao": "Comunicação instável", "gravidade": 2},
-    {"descricao": "Dispositivo sem comunicação", "gravidade": 3},
+    "Normal",
+    "Sinal Wi-Fi fraco",
+    "Sem comunicação",
+    "Erro no sensor"
 ]
 
 
@@ -29,30 +30,36 @@ def listar_dispositivos():
 
     for dispositivo in DISPOSITIVOS:
         status = random.choice(['online', 'offline', 'desconhecido'])
-        ultima_comunicacao = datetime.now() - timedelta(minutes=random.randint(0, 180))
-        rssi = random.randint(-95, -35) if status == 'online' else None
+        horas = random.randint(690, 730)
+        data_comunicacao = datetime.now() - timedelta(hours=horas)
 
+        # Formatação do RSSI
         if status == 'online':
-            problema = random.choice(PROBLEMAS[:3])
+            val_rssi = random.randint(-70, -40)
+            class_rssi = "Excelente" if val_rssi > -50 else "Bom"
+            rssi_str = f"{val_rssi} dBm\n{class_rssi}"
+            problema_str = random.choice([PROBLEMAS[0], PROBLEMAS[1]])
         elif status == 'offline':
-            problema = PROBLEMAS[3]
+            val_rssi = random.randint(-90, -80)
+            rssi_str = f"{val_rssi} dBm\nPéssimo"
+            problema_str = PROBLEMAS[2]
         else:
-            problema = {"descricao": "Estado do dispositivo desconhecido", "gravidade": 2}
+            rssi_str = "-"
+            problema_str = PROBLEMAS[3]
 
         dados.append({
             'id': dispositivo['id'],
-            'status': status,
-            'dispositivo': {
-                'nome': dispositivo['nome'],
-                'localizacao': dispositivo['localizacao'],
-            },
-            'ultima_comunicacao': ultima_comunicacao.isoformat(timespec='seconds'),
-            'rssi': rssi,
-            'problema': problema,
+            'dispositivo': f"{dispositivo['nome']}\n{dispositivo['identificador']}",
+            'ultima_comunicacao': f"há {horas} h\n{data_comunicacao.strftime('%d/%m/%Y, %H:%M')}",
+            'rssi': rssi_str,
+            'problema': problema_str,
+            'status': status.upper(),
+            'contador': 0
         })
 
-    return jsonify({'dados': dados})
+    # Retorna o Array diretamente no JSON
+    return jsonify(dados)
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
